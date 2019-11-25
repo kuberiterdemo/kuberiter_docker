@@ -1,21 +1,23 @@
-# Base dockerfile containing ubuntu and istio debian.
-# Can be used for testing
-FROM istionightly/base_debug
+FROM dealii/base:clang-serial
 
-# Micro pilot+mock mixer+echo, local kube
-COPY hyperistio kube-apiserver etcd kubectl /usr/local/bin/
-COPY *.yaml /var/lib/istio/config/
-COPY certs/ /var/lib/istio/
-COPY certs/default/* /etc/certs/
+MAINTAINER luca.heltai@gmail.com
+# based on work by Rene Gassmoeller and Timo Heister
 
-COPY istio.deb /tmp
-COPY istio-sidecar.deb /tmp
-COPY deb_test.sh /usr/local/bin/
+USER root
 
-# Root and istio are not intercepted
-RUN adduser istio-test --system
+RUN apt-get update && apt-get -yq install \
+    libmpich-dev \
+    mpich
 
-# Verify the debian files can be installed
-RUN dpkg -i /tmp/istio-sidecar.deb && rm /tmp/istio-sidecar.deb
-RUN dpkg -i /tmp/istio.deb && rm /tmp/istio.deb
+# Select default compilers and tell mpi to use clang
+ENV MPICH_CC clang
+ENV MPICH_CXX clang++
+ENV CC mpicc
+ENV CXX mpicxx
+ENV FC mpif90
+ENV FF mpif77
 
+# The base system already contains everything that is needed.
+ENV HOME /home/$USER
+WORKDIR $HOME
+USER $USER
